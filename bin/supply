@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+
+# The Cloud Foundry Python Buildpack. This script accepts parameters for a build
+# directory, a cache directory, and a directory for app environment variables.
+#
+#     $ ./bin/supply <build_dir> <cache_dir> <deps_dir> <deps_index>
+
+# Paths.
+BIN_DIR=$(cd $(dirname $0); pwd) # absolute path
+ROOT_DIR=$(dirname $BIN_DIR)
+BUILD_DIR=$1
+CACHE_DIR=$2
+DEPS_DIR=$3
+DEPS_IDX=$4
+export BIN_DIR BUILD_DIR CACHE_DIR DEPS_DIR DEPS_IDX
+
+# START CF Common
+BUILDPACK_PATH=$ROOT_DIR
+export BUILDPACK_PATH
+source $ROOT_DIR/compile-extensions/lib/common
+$ROOT_DIR/compile-extensions/bin/check_buildpack_version $ROOT_DIR $CACHE_DIR
+
+if [ -n "$DEPS_DIR" ]; then
+  env_vars=$($BUILDPACK_PATH/compile-extensions/bin/build_path_from_supply $DEPS_DIR)
+  for env_var in $env_vars; do
+    export $env_var
+  done
+  $BUILDPACK_PATH/compile-extensions/bin/write_profiled_from_supply $DEPS_DIR $BUILD_DIR
+fi
+# END CF Common
+
+## TODO copy conda in
+
+$ROOT_DIR/compile-extensions/bin/check_stack_support
+
+DEFAULT_PYTHON_VERSION="python-$($BUILDPACK_PATH/compile-extensions/bin/default_version_for $BUILDPACK_PATH/manifest.yml python)"
+PYTHON_EXE="/app/.cloudfoundry/python/bin/python"
+PIP_VERSION="9.0.1"
+SETUPTOOLS_VERSION="32.1.0"
+
+# Common Problem Warnings
+export WARNINGS_LOG=$(mktemp)
+export RECOMMENDED_PYTHON_VERSION=$DEFAULT_PYTHON_VERSION
+
+# Setup pip-pop (pip-diff)
+export PATH=$PATH:$ROOT_DIR/vendor/pip-pop ## TODO, should probably get moved to supply
+
+# Support Anvil Build_IDs
+[ ! "$SLUG_ID" ] && SLUG_ID="defaultslug"
+[ ! "$REQUEST_ID" ] && REQUEST_ID=$SLUG_ID
+[ ! "$STACK" ] && STACK=$DEFAULT_PYTHON_STACK
+
+# Sanitizing environment variables.
+unset GIT_DIR PYTHONHOME PYTHONPATH
+unset RECEIVE_DATA RUN_KEY BUILD_INFO DEPLOY LOG_TOKEN DYNO
+unset CYTOKINE_LOG_FILE GEM_PATH
+
+# Import collection of warnings.
+source $BIN_DIR/warnings
+
+# we need to put a bunch of symlinks in there later
+mkdir -p "$DEPS_DIR/$DEPS_IDX/bin"
+mkdir -p "$DEPS_DIR/$DEPS_IDX/lib"
+mkdir -p "$DEPS_DIR/$DEPS_IDX/include"
+
+# Set up outputs under new context
+PROFILE_PATH="$BUILD_DIR/.profile.d/python.sh" ## TODO really
+# EXPORT_PATH="$BIN_DIR/../export" ## TODO Delete??
+GUNICORN_PROFILE_PATH="$BUILD_DIR/.profile.d/python.gunicorn.sh" ## TODO really
+
+# We'll need to send these statics to other scripts we `source`.
+export PROFILE_PATH EXPORT_PATH
+
+# Prepend proper environment variables for Python use.
+export PYTHONUNBUFFERED=1
+export LANG=en_US.UTF-8
+## TODO we may need something special for this
+# export PKG_CONFIG_PATH=/app/.cloudfoundry/vendor/lib/pkg-config:/app/.cloudfoundry/python/lib/pkg-config:$PKG_CONFIG_PATH
+
+# Switch to the repo's context.
+cd $BUILD_DIR
+
+# Warn for lack of Procfile.
+if [[ ! -f Procfile ]]; then
+  puts-warn 'Warning: Your application is missing a Procfile. This file tells Cloud Foundry how to run your application.'
+  puts-warn 'Learn more: https://docs.cloudfoundry.org/buildpacks/prod-server.html#procfile'
+fi
+
+# Experimental pre_compile hook.
+source $BIN_DIR/steps/hooks/pre_compile ## TODO ; here or in finalize?
+
+# Install Python.
+source $BIN_DIR/steps/python

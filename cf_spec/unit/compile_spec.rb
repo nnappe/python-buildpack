@@ -45,5 +45,21 @@ describe 'Compile' do
         expect(output.chomp).to eq('python-2.7.14')
       end
     end
+
+    context 'runtime.txt does not exist' do
+      it 'finds default' do
+        output = run("./bin/steps/libs/version.rb #{manifest}")
+        expect(output.chomp).to eq('python-2.7.14')
+      end
+
+      context 'manifest with python 3' do
+        let(:manifest) { "cf_spec/fixtures/version-manifest-python3.yml" }
+
+        it 'finds default' do
+          output = run("./bin/steps/libs/version.rb #{manifest}")
+          expect(output.chomp).to eq('python-3.1.7')
+        end
+      end
+    end
   end
 end

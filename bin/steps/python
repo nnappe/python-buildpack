@@ -1,27 +1,30 @@
 PYTHON_VERSION=$(cat runtime.txt)
 PYTHON_VERSION=$($ROOT_DIR/bin/steps/libs/version.rb $ROOT_DIR/manifest.yml $PYTHON_VERSION)
+PYTHON_DIR=$DEPS_DIR/$DEPS_IDX/python
 
 # Install Python.
-if [ -f .cloudfoundry/python-version ]; then
-  if [ ! $(cat .cloudfoundry/python-version) = $PYTHON_VERSION ]; then
-    puts-step "Found $(cat .cloudfoundry/python-version), removing"
-    rm -fr .cloudfoundry/python
+if [ -f $CACHE_DIR/python-version ]; then
+  if [ ! $(cat $CACHE_DIR/python-version) = $PYTHON_VERSION ]; then
+    puts-step "Found $(cat $CACHE_DIR/python-version), removing"
+    rm -fr $PYTHON_DIR
   else
     SKIP_INSTALL=1
   fi
 fi
 
-if [ ! $STACK = $CACHED_PYTHON_STACK ]; then
-  rm -fr .cloudfoundry/python .cloudfoundry/python-stack .cloudfoundry/vendor
-  unset SKIP_INSTALL
+if [ -f $CACHE_DIR/python-stack ]; then
+  if [ ! $(cat $CACHE_DIR/python-stack) = $CF_STACK ]; then
+    ## TODO - What is this vendor directory?
+    rm -fr $PYTHON_DIR $CACHE_DIR/python-stack $CACHE_DIR/vendor
+    unset SKIP_INSTALL
+  fi
 fi
-
 
 if [ ! "$SKIP_INSTALL" ]; then
   puts-step "Installing $PYTHON_VERSION"
 
   # Prepare destination directory.
-  mkdir -p .cloudfoundry/python
+  mkdir $PYTHON_DIR
 
   exit_code=0
   url="https://lang-python.s3.amazonaws.com/$STACK/runtimes/$PYTHON_VERSION.tar.gz"
@@ -34,13 +37,13 @@ if [ ! "$SKIP_INSTALL" ]; then
   $ROOT_DIR/compile-extensions/bin/warn_if_newer_patch $url "$ROOT_DIR/manifest.yml"
 
   downloaded_file=/tmp/$PYTHON_VERSION.tar.gz
-  tar zxvf $downloaded_file -C .cloudfoundry/python &> /dev/null
+  tar zxvf $downloaded_file -C $PYTHON_DIR &> /dev/null
   rm $downloaded_file
   echo "Downloaded [$filtered_url]"
 
   # Record for future reference.
-  echo $PYTHON_VERSION > .cloudfoundry/python-version
-  echo $STACK > .cloudfoundry/python-stack
+  echo $PYTHON_VERSION > "$CACHE_DIR/python-version"
+  echo $STACK > "$CACHE_DIR/python-stack"
   FRESH_PYTHON=true
 
   hash -r

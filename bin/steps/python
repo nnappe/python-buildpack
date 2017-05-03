@@ -1,24 +1,30 @@
-PYTHON_VERSION=$(cat runtime.txt)
+source $BIN_DIR/utils
+
+PYTHON_VERSION=''
+if [ -f runtime.txt ]; then
+  PYTHON_VERSION=$(cat runtime.txt)
+fi
 PYTHON_VERSION=$($ROOT_DIR/bin/steps/libs/version.rb $ROOT_DIR/manifest.yml $PYTHON_VERSION)
 PYTHON_DIR=$DEPS_DIR/$DEPS_IDX/python
 
 # Install Python.
+if [ -f $CACHE_DIR/python-stack ]; then
+  if [ ! $(cat $CACHE_DIR/python-stack) = $CF_STACK ]; then
+    ## TODO - What is this vendor directory?
+    rm -fr $PYTHON_DIR $CACHE_DIR/python-version $CACHE_DIR/python-stack $CACHE_DIR/vendor
+    unset SKIP_INSTALL
+  fi
+fi
 if [ -f $CACHE_DIR/python-version ]; then
   if [ ! $(cat $CACHE_DIR/python-version) = $PYTHON_VERSION ]; then
     puts-step "Found $(cat $CACHE_DIR/python-version), removing"
     rm -fr $PYTHON_DIR
   else
     SKIP_INSTALL=1
+    ## TODO copy from cache dir to deps dir
   fi
 fi
 
-if [ -f $CACHE_DIR/python-stack ]; then
-  if [ ! $(cat $CACHE_DIR/python-stack) = $CF_STACK ]; then
-    ## TODO - What is this vendor directory?
-    rm -fr $PYTHON_DIR $CACHE_DIR/python-stack $CACHE_DIR/vendor
-    unset SKIP_INSTALL
-  fi
-fi
 
 if [ ! "$SKIP_INSTALL" ]; then
   puts-step "Installing $PYTHON_VERSION"
@@ -41,9 +47,23 @@ if [ ! "$SKIP_INSTALL" ]; then
   rm $downloaded_file
   echo "Downloaded [$filtered_url]"
 
+  # Link
+  mkdir -p $DEPS_DIR/$DEPS_IDX/bin
+  pushd $DEPS_DIR/$DEPS_IDX/bin
+    ln -s ../python/bin/* .
+  popd
+  mkdir -p $DEPS_DIR/$DEPS_IDX/lib
+  pushd $DEPS_DIR/$DEPS_IDX/lib
+    ln -s ../python/lib/* .
+  popd
+  mkdir -p $DEPS_DIR/$DEPS_IDX/include
+  pushd $DEPS_DIR/$DEPS_IDX/include
+    ln -s ../python/include/* .
+  popd
+
   # Record for future reference.
   echo $PYTHON_VERSION > "$CACHE_DIR/python-version"
-  echo $STACK > "$CACHE_DIR/python-stack"
+  echo $CF_STACK > "$CACHE_DIR/python-stack"
   FRESH_PYTHON=true
 
   hash -r
@@ -51,23 +71,10 @@ fi
 
 # If Pip isn't up to date:
 if [ "$FRESH_PYTHON" ] || [[ ! $(pip --version) == *$PIP_VERSION* ]]; then
-  WORKING_DIR=$(pwd)
+  echo $PATH
+  python -v
 
-  TMPTARDIR=$(mktemp -d)
-  trap "rm -rf $TMPTARDIR" RETURN
-
-  # Prepare it for the real world
-  # puts-step "Installing Setuptools ($SETUPTOOLS_VERSION)"
-  tar zxf $ROOT_DIR/vendor/setuptools-$SETUPTOOLS_VERSION.tar.gz -C $TMPTARDIR
-  cd $TMPTARDIR/setuptools-$SETUPTOOLS_VERSION/
-  python setup.py install &> /dev/null
-  cd $WORKING_DIR
-
-  # puts-step "Installing Pip ($PIP_VERSION)"
-  tar zxf $ROOT_DIR/vendor/pip-$PIP_VERSION.tar.gz -C $TMPTARDIR
-  cd $TMPTARDIR/pip-$PIP_VERSION/
-  python setup.py install &> /dev/null
-  cd $WORKING_DIR
+  $ROOT_DIR/vendor/get-pip.py --prefix=$DEPS_DIR/$DEPS_IDX
 fi
 
 hash -r

@@ -94,6 +94,15 @@ source $BIN_DIR/steps/hooks/pre_compile ## TODO ; here or in finalize?
 # Install Python.
 source $BIN_DIR/steps/python
 
+source $BIN_DIR/steps/cryptography
+
+source $BIN_DIR/steps/pylibmc
+
+# TODO should this happen in supply or finalize
+GUNICORN_PROFILE_PATH="$DEPS_DIR/$DEPS_IDX/profile.d/python.gunicorn.sh"
+cp $ROOT_DIR/vendor/python.gunicorn.sh $GUNICORN_PROFILE_PATH
+
+
 cp -Rl $DEPS_DIR/$DEPS_IDX/python $CACHE_DIR/
 cp -Rl $DEPS_DIR/$DEPS_IDX/vendor $CACHE_DIR/ &> /dev/null || true
 if [[ -d $DEPS_DIR/$DEPS_IDX/src ]]; then
@@ -121,12 +130,12 @@ mkdir -p $PROFILE_PATH
 echo "export PYTHONUNBUFFERED=$PYTHONUNBUFFERED" >> $PROFILE_PATH/python.sh
 echo "export LANG=$LANG" >> $PROFILE_PATH/python.sh
 
-echo "export PATH=\$HOME/$PATH$([[ ! -z "\${PATH}" ]] && echo ":\$PATH")" >> $PROFILE_PATH/python.sh
-echo "export LD_LIBRARY_PATH=\$HOME/$LD_LIBRARY_PATH$([[ ! -z "\${LD_LIBRARY_PATH}" ]] && echo ":\$LD_LIBRARY_PATH")" >> $PROFILE_PATH/python.sh
-echo "export PKG_CONFIG_PATH=\$HOME/$PKG_CONFIG_PATH$([[ ! -z "\${PKG_CONFIG_PATH}" ]] && echo ":\$PKG_CONFIG_PATH")" >> $PROFILE_PATH/python.sh
-echo "export C_INCLUDE_PATH=\$HOME/$C_INCLUDE_PATH$([[ ! -z "\${C_INCLUDE_PATH}" ]] && echo ":\$C_INCLUDE_PATH")" >> $PROFILE_PATH/python.sh
-echo "export CPLUS_INCLUDE_PATH=\$HOME/$CPLUS_INCLUDE_PATH$([[ ! -z "\${CPLUS_INCLUDE_PATH}" ]] && echo ":\$CPLUS_INCLUDE_PATH")" >> $PROFILE_PATH/python.sh
-echo "export LIBRARY_PATH=\$HOME/$LIBRARY_PATH$([[ ! -z "\${LIBRARY_PATH}" ]] && echo ":\$LIBRARY_PATH")" >> $PROFILE_PATH/python.sh
+echo "export PATH=\$HOME/$PATH\$([[ ! -z "\${PATH}" ]] && echo ":\$PATH")" >> $PROFILE_PATH/python.sh
+echo "export LD_LIBRARY_PATH=\$HOME/$LD_LIBRARY_PATH\$([[ ! -z "\$LD_LIBRARY_PATH" ]] && echo ":\$LD_LIBRARY_PATH")" >> $PROFILE_PATH/python.sh
+echo "export PKG_CONFIG_PATH=\$HOME/$PKG_CONFIG_PATH\$([[ ! -z "\$PKG_CONFIG_PATH" ]] && echo ":\$PKG_CONFIG_PATH")" >> $PROFILE_PATH/python.sh
+echo "export C_INCLUDE_PATH=\$HOME/$C_INCLUDE_PATH\$([[ ! -z "\$C_INCLUDE_PATH" ]] && echo ":\$C_INCLUDE_PATH")" >> $PROFILE_PATH/python.sh
+echo "export CPLUS_INCLUDE_PATH=\$HOME/$CPLUS_INCLUDE_PATH\$([[ ! -z "\$CPLUS_INCLUDE_PATH" ]] && echo ":\$CPLUS_INCLUDE_PATH")" >> $PROFILE_PATH/python.sh
+echo "export LIBRARY_PATH=\$HOME/$LIBRARY_PATH\$([[ ! -z \$LIBRARY_PATH ]] && echo ":\$LIBRARY_PATH")" >> $PROFILE_PATH/python.sh
 
 # Write config.yml 
 

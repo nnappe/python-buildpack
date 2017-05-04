@@ -63,18 +63,9 @@ if [ -f $BUILD_DIR/environment.yml ]; then
 fi
 
 # Common Problem Warnings
+### TODO WARNINGS_LOG is read but not written to, does it work?
 export WARNINGS_LOG=$(mktemp)
 export RECOMMENDED_PYTHON_VERSION=$DEFAULT_PYTHON_VERSION
-
-# Support Anvil Build_IDs
-[ ! "$SLUG_ID" ] && SLUG_ID="defaultslug"
-[ ! "$REQUEST_ID" ] && REQUEST_ID=$SLUG_ID
-[ ! "$STACK" ] && STACK=$DEFAULT_PYTHON_STACK
-
-# Sanitizing environment variables.
-unset GIT_DIR PYTHONHOME PYTHONPATH
-unset RECEIVE_DATA RUN_KEY BUILD_INFO DEPLOY LOG_TOKEN DYNO
-unset CYTOKINE_LOG_FILE GEM_PATH
 
 # Import collection of warnings.
 source $BIN_DIR/warnings
@@ -83,22 +74,16 @@ source $BIN_DIR/warnings
 mkdir -p /app/.cloudfoundry
 
 # Set up outputs under new context
-PROFILE_PATH="$BUILD_DIR/.profile.d/python.sh"
+PROFILE_PATH="$DEPS_DIR/$DEPS_IDX/profile.d/python.sh"
 EXPORT_PATH="$BIN_DIR/../export"
-GUNICORN_PROFILE_PATH="$BUILD_DIR/.profile.d/python.gunicorn.sh"
+GUNICORN_PROFILE_PATH="$DEPS_DIR/$DEPS_IDX/profile.d/python.gunicorn.sh"
 
 # We'll need to send these statics to other scripts we `source`.
 export PROFILE_PATH EXPORT_PATH
 
 # Prepend proper environment variables for Python use.
-export PATH=/app/.cloudfoundry/python/bin:/app/.cloudfoundry/vendor/bin:$PATH
 export PYTHONUNBUFFERED=1
 export LANG=en_US.UTF-8
-export C_INCLUDE_PATH=/app/.cloudfoundry/vendor/include:/app/.cloudfoundry/python/include:$C_INCLUDE_PATH
-export CPLUS_INCLUDE_PATH=/app/.cloudfoundry/vendor/include:/app/.cloudfoundry/python/include:$CPLUS_INCLUDE_PATH
-export LIBRARY_PATH=/app/.cloudfoundry/vendor/lib:/app/.cloudfoundry/python/lib:$LIBRARY_PATH
-export LD_LIBRARY_PATH=/app/.cloudfoundry/vendor/lib:/app/.cloudfoundry/python/lib:$LD_LIBRARY_PATH
-export PKG_CONFIG_PATH=/app/.cloudfoundry/vendor/lib/pkg-config:/app/.cloudfoundry/python/lib/pkg-config:$PKG_CONFIG_PATH
 
 # Switch to the repo's context.
 cd $BUILD_DIR
@@ -118,46 +103,9 @@ if [ ! -f requirements.txt ]; then
 fi
 
 
-# Sticky runtimes.
-if [ -f $CACHE_DIR/.cloudfoundry/python-version ]; then
-  DEFAULT_PYTHON_VERSION=$(cat $CACHE_DIR/.cloudfoundry/python-version)
-fi
-
-# Stack fallback for non-declared caches.
-if [ -f $CACHE_DIR/.cloudfoundry/python-stack ]; then
-  CACHED_PYTHON_STACK=$(cat $CACHE_DIR/.cloudfoundry/python-stack)
-else
-  CACHED_PYTHON_STACK=$STACK
-fi
-
 # If no runtime given, assume default version.
 if [ ! -f runtime.txt ]; then
   echo $DEFAULT_PYTHON_VERSION > runtime.txt
-fi
-
-# Prepare the cache.
-mkdir -p $CACHE_DIR
-
-# Restore old artifacts from the cache.
-# (Move cache dirs to build dir (will copy back after build))
-mkdir -p .cloudfoundry
-mv $CACHE_DIR/.cloudfoundry/python .cloudfoundry/ &> /dev/null || true
-mv $CACHE_DIR/.cloudfoundry/python-stack .cloudfoundry/ &> /dev/null || true
-mv $CACHE_DIR/.cloudfoundry/python-version .cloudfoundry/ &> /dev/null || true
-mv $CACHE_DIR/.cloudfoundry/vendor .cloudfoundry/ &> /dev/null || true
-if [[ -d $CACHE_DIR/.cloudfoundry/src ]]; then
-	mv $CACHE_DIR/.cloudfoundry/src .cloudfoundry/ &> /dev/null || true
-fi
-
-mkdir -p $(dirname $PROFILE_PATH)
-mkdir -p /app/.cloudfoundry/src
-
-if [[ $BUILD_DIR != '/app' ]]; then
-    # python expects to reside in /app, so set up symlinks
-    # we will not remove these later so subsequent buildpacks can still invoke it
-    ln -nsf $BUILD_DIR/.cloudfoundry/python /app/.cloudfoundry/python
-    ln -nsf $BUILD_DIR/.cloudfoundry/vendor /app/.cloudfoundry/vendor
-    # Note: .cloudfoundry/src is copied in later.
 fi
 
 # Install Python.

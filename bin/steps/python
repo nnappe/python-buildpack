@@ -49,17 +49,17 @@ if [ ! "$SKIP_INSTALL" ]; then
 
   # Link
   mkdir -p $DEPS_DIR/$DEPS_IDX/bin
-  pushd $DEPS_DIR/$DEPS_IDX/bin
+  pushd $DEPS_DIR/$DEPS_IDX/bin >/dev/null
     ln -s ../python/bin/* .
-  popd
+  popd >/dev/null
   mkdir -p $DEPS_DIR/$DEPS_IDX/lib
-  pushd $DEPS_DIR/$DEPS_IDX/lib
+  pushd $DEPS_DIR/$DEPS_IDX/lib >/dev/null
     ln -s ../python/lib/* .
-  popd
+  popd >/dev/null
   mkdir -p $DEPS_DIR/$DEPS_IDX/include
-  pushd $DEPS_DIR/$DEPS_IDX/include
+  pushd $DEPS_DIR/$DEPS_IDX/include >/dev/null
     ln -s ../python/include/* .
-  popd
+  popd >/dev/null
 
   # Record for future reference.
   echo $PYTHON_VERSION > "$CACHE_DIR/python-version"
@@ -71,10 +71,20 @@ fi
 
 # If Pip isn't up to date:
 if [ "$FRESH_PYTHON" ] || [[ ! $(pip --version) == *$PIP_VERSION* ]]; then
-  echo $PATH
-  python -v
+  $ROOT_DIR/vendor/get-pip.py --prefix=$DEPS_DIR/$DEPS_IDX/python
 
-  $ROOT_DIR/vendor/get-pip.py --prefix=$DEPS_DIR/$DEPS_IDX
+  mkdir -p $DEPS_DIR/$DEPS_IDX/bin
+  pushd $DEPS_DIR/$DEPS_IDX/bin >/dev/null
+    ln -sf ../python/bin/* .
+  popd >/dev/null
+  mkdir -p $DEPS_DIR/$DEPS_IDX/lib
+  pushd $DEPS_DIR/$DEPS_IDX/lib >/dev/null
+    ln -sf ../python/lib/* .
+  popd >/dev/null
+  mkdir -p $DEPS_DIR/$DEPS_IDX/include
+  pushd $DEPS_DIR/$DEPS_IDX/include >/dev/null
+    ln -sf ../python/include/* .
+  popd >/dev/null
 fi
 
 hash -r

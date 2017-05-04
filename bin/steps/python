@@ -18,13 +18,12 @@ fi
 if [ -f $CACHE_DIR/python-version ]; then
   if [ ! $(cat $CACHE_DIR/python-version) = $PYTHON_VERSION ]; then
     puts-step "Found $(cat $CACHE_DIR/python-version), removing"
-    rm -fr $PYTHON_DIR
+    ## do we want to remove for
+    rm -fr $PYTHON_DIR $CACHE_DIR/python-version $CACHE_DIR/vendor
   else
     SKIP_INSTALL=1
-    ## TODO copy from cache dir to deps dir
   fi
 fi
-
 
 if [ ! "$SKIP_INSTALL" ]; then
   puts-step "Installing $PYTHON_VERSION"
@@ -46,28 +45,28 @@ if [ ! "$SKIP_INSTALL" ]; then
   tar zxvf $downloaded_file -C $PYTHON_DIR &> /dev/null
   rm $downloaded_file
   echo "Downloaded [$filtered_url]"
-
-  # Link
-  mkdir -p $DEPS_DIR/$DEPS_IDX/bin
-  pushd $DEPS_DIR/$DEPS_IDX/bin >/dev/null
-    ln -s ../python/bin/* .
-  popd >/dev/null
-  mkdir -p $DEPS_DIR/$DEPS_IDX/lib
-  pushd $DEPS_DIR/$DEPS_IDX/lib >/dev/null
-    ln -s ../python/lib/* .
-  popd >/dev/null
-  mkdir -p $DEPS_DIR/$DEPS_IDX/include
-  pushd $DEPS_DIR/$DEPS_IDX/include >/dev/null
-    ln -s ../python/include/* .
-  popd >/dev/null
-
-  # Record for future reference.
-  echo $PYTHON_VERSION > "$CACHE_DIR/python-version"
-  echo $CF_STACK > "$CACHE_DIR/python-stack"
   FRESH_PYTHON=true
-
-  hash -r
 fi
+
+# Link
+mkdir -p $DEPS_DIR/$DEPS_IDX/bin
+pushd $DEPS_DIR/$DEPS_IDX/bin >/dev/null
+  ln -s ../python/bin/* .
+popd >/dev/null
+mkdir -p $DEPS_DIR/$DEPS_IDX/lib
+pushd $DEPS_DIR/$DEPS_IDX/lib >/dev/null
+  ln -s ../python/lib/* .
+popd >/dev/null
+mkdir -p $DEPS_DIR/$DEPS_IDX/include
+pushd $DEPS_DIR/$DEPS_IDX/include >/dev/null
+  ln -s ../python/include/* .
+popd >/dev/null
+
+# Record for future reference.
+echo $PYTHON_VERSION > "$CACHE_DIR/python-version"
+echo $CF_STACK > "$CACHE_DIR/python-stack"
+
+hash -r
 
 # If Pip isn't up to date:
 if [ "$FRESH_PYTHON" ] || [[ ! $(pip --version) == *$PIP_VERSION* ]]; then
@@ -84,6 +83,10 @@ if [ "$FRESH_PYTHON" ] || [[ ! $(pip --version) == *$PIP_VERSION* ]]; then
   mkdir -p $DEPS_DIR/$DEPS_IDX/include
   pushd $DEPS_DIR/$DEPS_IDX/include >/dev/null
     ln -sf ../python/include/* .
+  popd >/dev/null
+  mkdir -p $DEPS_DIR/$DEPS_IDX/pkgconfig
+  pushd $DEPS_DIR/$DEPS_IDX/pkgconfig >/dev/null
+    ln -sf ../python/lib/pkgconfig/* .
   popd >/dev/null
 fi
 

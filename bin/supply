@@ -7,7 +7,7 @@
 
 # Paths.
 BIN_DIR=$(cd $(dirname $0); pwd) # absolute path
-ROOT_DIR=$(dirname $BIN_DIR)
+ROOT_DIR=$(dirname "$BIN_DIR")
 BUILD_DIR=$1
 CACHE_DIR=$2
 DEPS_DIR=$3
@@ -18,6 +18,9 @@ export BIN_DIR BUILD_DIR CACHE_DIR DEPS_DIR DEPS_IDX
 export BUILDPACK_PATH=$ROOT_DIR
 export BUILDPACK_DIR=$ROOT_DIR
 source $ROOT_DIR/compile-extensions/lib/common
+
+$ROOT_DIR/compile-extensions/bin/check_stack_support
+
 $ROOT_DIR/compile-extensions/bin/check_buildpack_version $ROOT_DIR $CACHE_DIR
 
 if [ -n "$DEPS_DIR" ]; then
@@ -28,12 +31,12 @@ if [ -n "$DEPS_DIR" ]; then
 fi
 # END CF Common
 
-$ROOT_DIR/compile-extensions/bin/check_stack_support
+echo "-----> Supplying Python"
 
 PIP_VERSION="9.0.1"
-SETUPTOOLS_VERSION="32.1.0"
 
 # Common Problem Warnings
+### TODO WARNINGS_LOG is read but not written to, does it work?
 export WARNINGS_LOG=$(mktemp)
 export RECOMMENDED_PYTHON_VERSION=$DEFAULT_PYTHON_VERSION
 
@@ -53,20 +56,78 @@ if [[ ! -f Procfile ]]; then
   puts-warn 'Learn more: https://docs.cloudfoundry.org/buildpacks/prod-server.html#procfile'
 fi
 
+setenv () {
+  env_name=$1
+  env_val=$2
+  if [[ -z "${!env_name}" ]]; then
+    export "$env_name"=$env_val
+  else
+    export "$env_name"=$env_val:"${!env_name}"
+  fi
+}
+
 export PYTHONUNBUFFERED=1
 export LANG=en_US.UTF-8
-export PATH=$DEPS_DIR/$DEPS_IDX/bin:$PATH
-export C_INCLUDE_PATH=$DEPS_DIR/$DEPS_IDX/include:$C_INCLUDE_PATH
-export CPLUS_INCLUDE_PATH=$DEPS_DIR/$DEPS_IDX/include:$CPLUS_INCLUDE_PATH
-export LIBRARY_PATH=$DEPS_DIR/$DEPS_IDX/lib:$LIBRARY_PATH
-export LD_LIBRARY_PATH=$DEPS_DIR/$DEPS_IDX/lib:$LD_LIBRARY_PATH
-export PKG_CONFIG_PATH=$DEPS_DIR/$DEPS_IDX/lib/pkg-config:$PKG_CONFIG_PATH
+
+setenv PATH $DEPS_DIR/$DEPS_IDX/bin
+setenv C_INCLUDE_PATH $DEPS_DIR/$DEPS_IDX/include
+setenv CPLUS_INCLUDE_PATH $DEPS_DIR/$DEPS_IDX/include
+setenv LIBRARY_PATH $DEPS_DIR/$DEPS_IDX/lib
+setenv LD_LIBRARY_PATH $DEPS_DIR/$DEPS_IDX/lib
+setenv PKG_CONFIG_PATH $DEPS_DIR/$DEPS_IDX/pkgconfig
+
+# Restore old artifacts from the cache.
+# (Move cache dirs to build dir (will copy back after build))
+# TODO What is vendor for ???
+mv $CACHE_DIR/python $DEPS_DIR/$DEPS_IDX/python &> /dev/null || true
+mv $CACHE_DIR/vendor $DEPS_DIR/$DEPS_IDX/vendor &> /dev/null || true
+if [[ -d $CACHE_DIR/src ]]; then
+	mv $CACHE_DIR/src $DEPS_DIR/$DEPS_IDX/src &> /dev/null || true
+fi
 
 # Install pip-pop
-mv $BUILDPACK_DIR/vendor/pip-pop $DEPS_DIR/$DEPS_IDX/pip-pop
+cp -r $BUILDPACK_DIR/vendor/pip-pop $DEPS_DIR/$DEPS_IDX/pip-pop
 
 # Experimental pre_compile hook.
 source $BIN_DIR/steps/hooks/pre_compile ## TODO ; here or in finalize?
 
 # Install Python.
 source $BIN_DIR/steps/python
+
+cp -Rl $DEPS_DIR/$DEPS_IDX/python $CACHE_DIR/
+cp -Rl $DEPS_DIR/$DEPS_IDX/vendor $CACHE_DIR/ &> /dev/null || true
+if [[ -d $DEPS_DIR/$DEPS_IDX/src ]]; then
+	cp -Rl $DEPS_DIR/$DEPS_IDX/src $CACHE_DIR/ &> /dev/null || true
+fi
+
+# Sets up the environment variables for subsequent processes run by
+# multibuildpack.
+
+ENV_DIR=$DEPS_DIR/$DEPS_IDX/env
+
+mkdir -p $ENV_DIR
+echo $PYTHONUNBUFFERED > $ENV_DIR/PYTHONUNBUFFERED
+echo $LANG > $ENV_DIR/LANG
+echo $C_INCLUDE_PATH > $ENV_DIR/C_INCLUDE_PATH
+echo $CPLUS_INCLUDE_PATH > $ENV_DIR/CPLUS_INCLUDE_PATH
+echo $LIBRARY_PATH > $ENV_DIR/LIBRARY_PATH
+echo $PKG_CONFIG_PATH > $ENV_DIR/PKG_CONFIG_PATH
+
+# Set up the profile.d for this buildpack
+
+PROFILE_PATH=$DEPS_DIR/$DEPS_IDX/profile.d
+
+mkdir -p $PROFILE_PATH
+echo "export PYTHONUNBUFFERED=$PYTHONUNBUFFERED" >> $PROFILE_PATH/python.sh
+echo "export LANG=$LANG" >> $PROFILE_PATH/python.sh
+
+echo "export PATH=\$HOME/$PATH$([[ ! -z "\${PATH}" ]] && echo ":\$PATH")" >> $PROFILE_PATH/python.sh
+echo "export LD_LIBRARY_PATH=\$HOME/$LD_LIBRARY_PATH$([[ ! -z "\${LD_LIBRARY_PATH}" ]] && echo ":\$LD_LIBRARY_PATH")" >> $PROFILE_PATH/python.sh
+echo "export PKG_CONFIG_PATH=\$HOME/$PKG_CONFIG_PATH$([[ ! -z "\${PKG_CONFIG_PATH}" ]] && echo ":\$PKG_CONFIG_PATH")" >> $PROFILE_PATH/python.sh
+echo "export C_INCLUDE_PATH=\$HOME/$C_INCLUDE_PATH$([[ ! -z "\${C_INCLUDE_PATH}" ]] && echo ":\$C_INCLUDE_PATH")" >> $PROFILE_PATH/python.sh
+echo "export CPLUS_INCLUDE_PATH=\$HOME/$CPLUS_INCLUDE_PATH$([[ ! -z "\${CPLUS_INCLUDE_PATH}" ]] && echo ":\$CPLUS_INCLUDE_PATH")" >> $PROFILE_PATH/python.sh
+echo "export LIBRARY_PATH=\$HOME/$LIBRARY_PATH$([[ ! -z "\${LIBRARY_PATH}" ]] && echo ":\$LIBRARY_PATH")" >> $PROFILE_PATH/python.sh
+
+# Write config.yml 
+
+$BUILDPACK_PATH/compile-extensions/bin/write_config_yml $BUILDPACK_DIR $DEPS_DIR/$DEPS_IDX

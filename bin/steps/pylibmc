@@ -7,7 +7,7 @@
 # This script is invoked by [`bin/compile`](/).
 
 # The location of the pre-compiled libmemcached binary.
-VENDORED_MEMCACHED="https://lang-python.s3.amazonaws.com/$STACK/libraries/vendor/libmemcache.tar.gz"
+VENDORED_MEMCACHED="https://lang-python.s3.amazonaws.com/libraries/vendor/libmemcache.tar.gz"
 
 # Syntax sugar.
 source $BIN_DIR/utils
@@ -15,9 +15,9 @@ source $BIN_DIR/utils
 # If pylibmc exists within requirements, use vendored libmemcached.
 if (pip-grep -s requirements.txt pylibmc &> /dev/null) then
 
-  if [ ! -d ".cloudfoundry/vendor/lib/sasl2" ]; then
+  if [ ! -d "$DEPS_DIR/$DEPS_IDX/vendor/lib/sasl2" ]; then
     echo "-----> Noticed pylibmc. Bootstrapping libmemcached."
-    mkdir -p .cloudfoundry/vendor
+    mkdir -p $DEPS_DIR/$DEPS_IDX/vendor
  
     # Download and extract libmemcached into target vendor directory.
     exit_code=0
@@ -26,9 +26,10 @@ if (pip-grep -s requirements.txt pylibmc &> /dev/null) then
     echo "Downloaded [$filtered_url]"
 
     downloaded_file=/tmp/libmemcache.tar.gz
-    tar zxvf $downloaded_file -C .cloudfoundry/vendor &> /dev/null
+    tar zxvf $downloaded_file -C $DEPS_DIR/$DEPS_IDX/vendor &> /dev/null
     rm $downloaded_file
   fi
 
-  export LIBMEMCACHED=$(pwd)/vendor
+  export LIBMEMCACHED=$DEPS_DIR/$DEPS_IDX/vendor
+  echo $LIBMEMCACHED > $ENV_DIR/LIBMEMCACHED
 fi

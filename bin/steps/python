@@ -10,7 +10,6 @@ PYTHON_DIR=$DEPS_DIR/$DEPS_IDX/python
 # Install Python.
 if [ -f $CACHE_DIR/python-stack ]; then
   if [ ! $(cat $CACHE_DIR/python-stack) = $CF_STACK ]; then
-    ## TODO - What is this vendor directory?
     rm -fr $PYTHON_DIR $CACHE_DIR/python-version $CACHE_DIR/python-stack $CACHE_DIR/vendor
     unset SKIP_INSTALL
   fi
@@ -32,8 +31,7 @@ if [ ! "$SKIP_INSTALL" ]; then
   mkdir $PYTHON_DIR
 
   exit_code=0
-  url="https://lang-python.s3.amazonaws.com/$STACK/runtimes/$PYTHON_VERSION.tar.gz"
-
+  url="https://lang-python.s3.amazonaws.com/runtimes/$PYTHON_VERSION.tar.gz"
   filtered_url=$($ROOT_DIR/compile-extensions/bin/download_dependency $url /tmp) || exit_code=$?
   if [ $exit_code -ne 0 ]; then
     $ROOT_DIR/compile-extensions/bin/recommend_dependency $url
@@ -70,7 +68,7 @@ hash -r
 
 # If Pip isn't up to date:
 if [ "$FRESH_PYTHON" ] || [[ ! $(pip --version) == *$PIP_VERSION* ]]; then
-  $ROOT_DIR/vendor/get-pip.py --prefix=$DEPS_DIR/$DEPS_IDX/python
+  $ROOT_DIR/vendor/get-pip.py --prefix=$DEPS_DIR/$DEPS_IDX/python &> /dev/null || true
 
   mkdir -p $DEPS_DIR/$DEPS_IDX/bin
   pushd $DEPS_DIR/$DEPS_IDX/bin >/dev/null

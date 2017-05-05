@@ -36,6 +36,16 @@ puts-cmd() {
   echo "     $ $@"
 }
 
+set-env-append () {
+  env_name=$1
+  env_val=$2
+  if [[ -z "${!env_name}" ]]; then
+    export "$env_name"=$env_val
+  else
+    export "$env_name"=$env_val:"${!env_name}"
+  fi
+}
+
 # Usage: $ set-env key value
 set-env() {
   echo "export $1=$2" >> $PROFILE_PATH

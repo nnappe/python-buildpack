@@ -5,7 +5,7 @@
 
 # Usage:
 #
-#     $ bin/compile <build-dir> <cache-dir> <env-path>
+#     $ bin/finalize <build-dir> <cache-dir> <deps_dir> <deps_index> 
 
 # Fail fast and fail hard.
 set -eo pipefail
@@ -42,138 +42,70 @@ fi
 # Syntax sugar.
 source $BIN_DIR/utils
 
-# Use miniconda if environment.yml exists and exit
-if [ -f $BUILD_DIR/environment.yml ]; then
-  echo "----------------- USING CONDA BUILDPACK -----------------"
+# # Use miniconda if environment.yml exists and exit
+# if [ -f $BUILD_DIR/environment.yml ]; then
+#   echo "----------------- USING CONDA BUILDPACK -----------------"
 
-  # Experimental pre_compile hook.
-  pushd $BUILD_DIR
-    source $BIN_DIR/steps/hooks/pre_compile
-  popd
+#   # Experimental pre_compile hook.
+#   pushd $BUILD_DIR
+#     source $BIN_DIR/steps/hooks/pre_compile
+#   popd
 
-  $BIN_DIR/steps/conda-install $BUILD_DIR $CACHE_DIR
-  $ROOT_DIR/compile-extensions/bin/store_buildpack_metadata $ROOT_DIR $CACHE_DIR
+#   $BIN_DIR/steps/conda-install $BUILD_DIR $CACHE_DIR
+#   $ROOT_DIR/compile-extensions/bin/store_buildpack_metadata $ROOT_DIR $CACHE_DIR
 
-  # Experimental post_compile hook.
-  pushd $BUILD_DIR
-    source $BIN_DIR/steps/hooks/post_compile
-  popd
+#   # Experimental post_compile hook.
+#   pushd $BUILD_DIR
+#     source $BIN_DIR/steps/hooks/post_compile
+#   popd
 
-  exit 0
-fi
-
-# Common Problem Warnings
-### TODO WARNINGS_LOG is read but not written to, does it work?
-export WARNINGS_LOG=$(mktemp)
-export RECOMMENDED_PYTHON_VERSION=$DEFAULT_PYTHON_VERSION
-
-# Import collection of warnings.
-source $BIN_DIR/warnings
+#   exit 0
+# fi
 
 # we need to put a bunch of symlinks in there later
 mkdir -p /app/.cloudfoundry
 
-# Set up outputs under new context
-PROFILE_PATH="$DEPS_DIR/$DEPS_IDX/profile.d/python.sh"
-EXPORT_PATH="$BIN_DIR/../export"
-GUNICORN_PROFILE_PATH="$DEPS_DIR/$DEPS_IDX/profile.d/python.gunicorn.sh"
-
-# We'll need to send these statics to other scripts we `source`.
-export PROFILE_PATH EXPORT_PATH
-
-# Prepend proper environment variables for Python use.
-export PYTHONUNBUFFERED=1
-export LANG=en_US.UTF-8
-
 # Switch to the repo's context.
 cd $BUILD_DIR
 
-# Warn for lack of Procfile.
-if [[ ! -f Procfile ]]; then
-  puts-warn 'Warning: Your application is missing a Procfile. This file tells Cloud Foundry how to run your application.'
-  puts-warn 'Learn more: https://docs.cloudfoundry.org/buildpacks/prod-server.html#procfile'
-fi
-
-# Experimental pre_compile hook.
-source $BIN_DIR/steps/hooks/pre_compile
-
-# If no requirements.txt file given, assume `setup.py develop` is intended.
-if [ ! -f requirements.txt ]; then
-  echo "-e ." > requirements.txt
-fi
-
-
-# If no runtime given, assume default version.
-if [ ! -f runtime.txt ]; then
-  echo $DEFAULT_PYTHON_VERSION > runtime.txt
-fi
-
-# Install Python.
-source $BIN_DIR/steps/python
-
-# Sanity check for setuptools/distribute.
-source $BIN_DIR/steps/setuptools
-
-# Uninstall removed dependencies with Pip.
-source $BIN_DIR/steps/pip-uninstall
-
-# Mercurial support.
-source $BIN_DIR/steps/mercurial
-
-# Pylibmc support.
-source $BIN_DIR/steps/pylibmc
-
-# Libffi support.
-source $BIN_DIR/steps/cryptography
-
+# # Uninstall removed dependencies with Pip.
+# source $BIN_DIR/steps/pip-uninstall
+echo "------------------------------------------------------------------------ $PKG_CONFIG_PATH"
 # Install dependencies with Pip (where the magic happens).
 source $BIN_DIR/steps/pip-install
 
-# Support for NLTK corpora.
-sub-env $BIN_DIR/steps/nltk
+# # Support for NLTK corpora.
+# sub-env $BIN_DIR/steps/nltk
 
-# Support for pip install -e.
-rm -fr $BUILD_DIR/.cloudfoundry/src
-deep-cp /app/.cloudfoundry/src $BUILD_DIR/.cloudfoundry/src
+# # Support for pip install -e.
+# rm -fr $BUILD_DIR/.cloudfoundry/src
+# deep-cp /app/.cloudfoundry/src $BUILD_DIR/.cloudfoundry/src
 
-# Django collectstatic support.
-sub-env $BIN_DIR/steps/collectstatic
+# # Django collectstatic support.
+# sub-env $BIN_DIR/steps/collectstatic
 
 # Create .profile script for application runtime environment variables.
-set-env PATH '$HOME/.cloudfoundry/python/bin:$PATH'
-set-env PYTHONUNBUFFERED true
-set-env PYTHONHOME /app/.cloudfoundry/python
-set-env LIBRARY_PATH '/app/.cloudfoundry/vendor/lib:/app/.cloudfoundry/python/lib:$LIBRARY_PATH'
-set-env LD_LIBRARY_PATH '/app/.cloudfoundry/vendor/lib:/app/.cloudfoundry/python/lib:$LD_LIBRARY_PATH'
-set-default-env LANG en_US.UTF-8
-set-default-env PYTHONHASHSEED random
-set-default-env PYTHONPATH /app/
-
-# Install sane-default script for $WEB_CONCURRENCY and $FORWARDED_ALLOW_IPS.
-cp $ROOT_DIR/vendor/python.gunicorn.sh $GUNICORN_PROFILE_PATH
+# set-env PATH '$HOME/.cloudfoundry/python/bin:$PATH'
+# set-env PYTHONUNBUFFERED true
+# set-env PYTHONHOME /app/.cloudfoundry/python
+# set-env LIBRARY_PATH '/app/.cloudfoundry/vendor/lib:/app/.cloudfoundry/python/lib:$LIBRARY_PATH'
+# set-env LD_LIBRARY_PATH '/app/.cloudfoundry/vendor/lib:/app/.cloudfoundry/python/lib:$LD_LIBRARY_PATH'
+# set-default-env LANG en_US.UTF-8
+# set-default-env PYTHONHASHSEED random
+# set-default-env PYTHONPATH /app/
 
 # Experimental post_compile hook.
 source $BIN_DIR/steps/hooks/post_compile
 
-set +e
-# rewrite build dir in egg links to /app so things are found at runtime
-find .cloudfoundry/python/lib/python*/site-packages/ -name "*.pth" -print0 2> /dev/null | xargs -r -0 -n 1 sed -i -e "s#$(pwd)#/app#" &> /dev/null
-set -e
+# set +e
+# # rewrite build dir in egg links to /app so things are found at runtime
+# find .cloudfoundry/python/lib/python*/site-packages/ -name "*.pth" -print0 2> /dev/null | xargs -r -0 -n 1 sed -i -e "s#$(pwd)#/app#" &> /dev/null
+# set -e
 
-set +e
-# Support for PyPy
-find .cloudfoundry/python/lib-python/*/site-packages/  -name "*.pth" -print0 2> /dev/null | xargs -r -0 -n 1 sed -i -e "s#$(pwd)#/app#" &> /dev/null
-set -e
-
-# Copy from build dir to cache (Using hard links for performance and lower disk usage)
-mkdir -p $CACHE_DIR/.cloudfoundry
-cp -Rl .cloudfoundry/python $CACHE_DIR/.cloudfoundry/
-cp -Rl .cloudfoundry/python-version $CACHE_DIR/.cloudfoundry/
-cp -Rl .cloudfoundry/python-stack $CACHE_DIR/.cloudfoundry/ &> /dev/null || true
-cp -Rl .cloudfoundry/vendor $CACHE_DIR/.cloudfoundry/ &> /dev/null || true
-if [[ -d .cloudfoundry/src ]]; then
-	cp -Rl .cloudfoundry/src $CACHE_DIR/.cloudfoundry/ &> /dev/null || true
-fi
+# set +e
+# # Support for PyPy
+# find .cloudfoundry/python/lib-python/*/site-packages/  -name "*.pth" -print0 2> /dev/null | xargs -r -0 -n 1 sed -i -e "s#$(pwd)#/app#" &> /dev/null
+# set -e
 
 # Fin.
 $ROOT_DIR/compile-extensions/bin/store_buildpack_metadata $ROOT_DIR $CACHE_DIR

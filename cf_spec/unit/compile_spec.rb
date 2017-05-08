@@ -5,7 +5,7 @@ describe 'Compile' do
   def run(cmd, env: {})
     if RUBY_PLATFORM =~ /darwin/i
       env_flags = env.map{|k,v| "-e #{k}=#{v}"}.join(' ')
-      `docker run --rm #{env_flags} -v #{Dir.pwd}:/buildpack:ro -w /buildpack cloudfoundry/cflinuxfs2 #{cmd}`
+      `docker run --rm #{env_flags} -v #{Dir.pwd}:/buildpack -w /buildpack cloudfoundry/cflinuxfs2 #{cmd}`
     else
       `env #{env.map{|k,v| "#{k}=#{v}"}.join(' ')} #{cmd}`
     end

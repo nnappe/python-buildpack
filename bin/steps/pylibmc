@@ -34,11 +34,11 @@ if (pip-grep -s requirements.txt pylibmc &> /dev/null) then
   echo $LIBMEMCACHED > $ENV_DIR/LIBMEMCACHED
 
   pushd $DEPS_DIR/$DEPS_IDX/lib >/dev/null
-    ln -s ../vendor/lib/lib*.* .
+    ln -sf ../vendor/lib/lib*.* .
     ln -s ../vendor/lib/sasl2/* .
   popd >/dev/null
   pushd $DEPS_DIR/$DEPS_IDX/pkgconfig >/dev/null
-    ln -s ../vendor/lib/pkgconfig/* .
+    ln -sf ../vendor/lib/pkgconfig/* .
   popd >/dev/null
   pushd $DEPS_DIR/$DEPS_IDX/include >/dev/null
     ln -s ../vendor/include/* .

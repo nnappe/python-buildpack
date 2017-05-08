@@ -46,7 +46,7 @@ set-env-append () {
   fi
 }
 
-set_profile_d {
+append_profile_d() {
   echo "export $1=$2" >> $PROFILE_PATH/python.sh
 }
 

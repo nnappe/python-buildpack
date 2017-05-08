@@ -5,15 +5,12 @@
 
 # Usage:
 #
-#     $ bin/finalize <build-dir> <cache-dir> <deps_dir> <deps_index> 
+#     $ bin/finalize <build-dir> <cache-dir> <deps_dir> <deps_index>
 
 # Fail fast and fail hard.
 set -eo pipefail
 
 [ "$BUILDPACK_XTRACE" ] && set -o xtrace
-
-# Prepend proper path for virtualenv hackery. This will be deprecated soon.
-export PATH=:/usr/local/bin:$PATH
 
 # Paths.
 BIN_DIR=$(cd $(dirname $0); pwd) # absolute path
@@ -28,16 +25,12 @@ export BIN_DIR BUILD_DIR CACHE_DIR DEPS_DIR DEPS_IDX
 BUILDPACK_PATH=$ROOT_DIR
 export BUILDPACK_PATH
 source $ROOT_DIR/compile-extensions/lib/common
-$ROOT_DIR/compile-extensions/bin/check_buildpack_version $ROOT_DIR $CACHE_DIR
 
-if [ -n "$DEPS_DIR" ]; then
-  env_vars=$($BUILDPACK_PATH/compile-extensions/bin/build_path_from_supply $DEPS_DIR)
-  for env_var in $env_vars; do
-    export $env_var
-  done
-  $BUILDPACK_PATH/compile-extensions/bin/write_profiled_from_supply $DEPS_DIR $BUILD_DIR
-fi
-# END CF Common
+env_vars=$($BUILDPACK_PATH/compile-extensions/bin/build_path_from_supply $DEPS_DIR)
+for env_var in $env_vars; do
+  export $env_var
+done
+$BUILDPACK_PATH/compile-extensions/bin/write_profiled_from_supply $DEPS_DIR $BUILD_DIR
 
 # Syntax sugar.
 source $BIN_DIR/utils
@@ -62,15 +55,15 @@ source $BIN_DIR/utils
 #   exit 0
 # fi
 
-# we need to put a bunch of symlinks in there later
-mkdir -p /app/.cloudfoundry
 
 # Switch to the repo's context.
 cd $BUILD_DIR
 
-# # Uninstall removed dependencies with Pip.
-# source $BIN_DIR/steps/pip-uninstall
 echo "------------------------------------------------------------------------ $PKG_CONFIG_PATH"
+
+# Uninstall removed dependencies with Pip.
+source $BIN_DIR/steps/pip-uninstall
+
 # Install dependencies with Pip (where the magic happens).
 source $BIN_DIR/steps/pip-install
 
@@ -108,4 +101,5 @@ source $BIN_DIR/steps/hooks/post_compile
 # set -e
 
 # Fin.
+$BUILDPACK_PATH/compile-extensions/bin/write_profiled_from_supply $DEPS_DIR $BUILD_DIR
 $ROOT_DIR/compile-extensions/bin/store_buildpack_metadata $ROOT_DIR $CACHE_DIR

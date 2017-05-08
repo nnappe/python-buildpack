@@ -59,8 +59,6 @@ source $BIN_DIR/utils
 # Switch to the repo's context.
 cd $BUILD_DIR
 
-echo "------------------------------------------------------------------------ $PKG_CONFIG_PATH"
-
 # Uninstall removed dependencies with Pip.
 source $BIN_DIR/steps/pip-uninstall
 

@@ -25,5 +25,8 @@ else
   cp requirements.txt $DEPS_DIR/$DEPS_IDX/python/requirements-declared.txt
   pip freeze > $DEPS_DIR/$DEPS_IDX/python/requirements-installed.txt
 fi
-
+  
+pushd $DEPS_DIR/$DEPS_IDX/bin >/dev/null
+  ln -sf ../python/bin/* .
+popd >/dev/null
 echo

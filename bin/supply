@@ -112,10 +112,21 @@ GUNICORN_PROFILE_PATH="$PROFILE_PATH/python.gunicorn.sh"
 cp $ROOT_DIR/vendor/python.gunicorn.sh $GUNICORN_PROFILE_PATH
 
 set_default_profile_d PYTHONHASHSEED random
-set_default_profile_d PYTHONPATH "\$HOME"
+echo random > $ENV_DIR/PYTHONHASHSEED
+
+set_default_profile_d PYTHONPATH "\$DEPS_DIR/$DEPS_IDX"
+echo "$DEPS_DIR/$DEPS_IDX" > $ENV_DIR/PYTHONPATH
+
 set_default_profile_d LANG en_US.UTF-8
-append_profile_d PYTHONHOME "\$DEPS_DIR/$DEPS_IDX/lib"
+echo en_US.UTF-8 > $ENV_DIR/LANG
+
+append_profile_d PYTHONHOME "\$DEPS_DIR/$DEPS_IDX/python"
+echo $DEPS_DIR/$DEPS_IDX/python > $ENV_DIR/PYTHONHOME
+
 append_profile_d PYTHONBUFFERED true
+echo true > $ENV_DIR/PYTHONBUFFERED
+
+echo "$DEPS_DIR/$DEPS_IDX/lib" > $ENV_DIR/LIBRARY_PATH
 
 # Write config.yml
 $BUILDPACK_PATH/compile-extensions/bin/write_config_yml $BUILDPACK_DIR $DEPS_DIR/$DEPS_IDX

@@ -47,17 +47,12 @@ if [ ! "$SKIP_INSTALL" ]; then
 fi
 
 # Link
-mkdir -p $DEPS_DIR/$DEPS_IDX/bin
 pushd $DEPS_DIR/$DEPS_IDX/bin >/dev/null
   ln -s ../python/bin/* .
 popd >/dev/null
-mkdir -p $DEPS_DIR/$DEPS_IDX/lib
+
 pushd $DEPS_DIR/$DEPS_IDX/lib >/dev/null
-  ln -s ../python/lib/* .
-popd >/dev/null
-mkdir -p $DEPS_DIR/$DEPS_IDX/include
-pushd $DEPS_DIR/$DEPS_IDX/include >/dev/null
-  ln -s ../python/include/* .
+  ln -sf ../python/lib/* .
 popd >/dev/null
 
 # Record for future reference.
@@ -68,24 +63,21 @@ hash -r
 
 # If Pip isn't up to date:
 if [ "$FRESH_PYTHON" ] || [[ ! $(pip --version) == *$PIP_VERSION* ]]; then
-  $ROOT_DIR/vendor/get-pip.py --prefix=$DEPS_DIR/$DEPS_IDX/python &> /dev/null || true
+  $ROOT_DIR/vendor/get-pip.py --prefix=$DEPS_DIR/$DEPS_IDX/python || true
 
-  mkdir -p $DEPS_DIR/$DEPS_IDX/bin
   pushd $DEPS_DIR/$DEPS_IDX/bin >/dev/null
     ln -sf ../python/bin/* .
   popd >/dev/null
-  mkdir -p $DEPS_DIR/$DEPS_IDX/lib
-  pushd $DEPS_DIR/$DEPS_IDX/lib >/dev/null
-    ln -sf ../python/lib/* .
-  popd >/dev/null
-  mkdir -p $DEPS_DIR/$DEPS_IDX/include
-  pushd $DEPS_DIR/$DEPS_IDX/include >/dev/null
-    ln -sf ../python/include/* .
-  popd >/dev/null
-  mkdir -p $DEPS_DIR/$DEPS_IDX/pkgconfig
-  pushd $DEPS_DIR/$DEPS_IDX/pkgconfig >/dev/null
-    ln -sf ../python/lib/pkgconfig/* .
-  popd >/dev/null
 fi
+
+pushd $DEPS_DIR/$DEPS_IDX/lib >/dev/null
+  ln -sf ../python/lib/* .
+popd >/dev/null
+pushd $DEPS_DIR/$DEPS_IDX/include >/dev/null
+  ln -sf ../python/include/* .
+popd >/dev/null
+pushd $DEPS_DIR/$DEPS_IDX/pkgconfig >/dev/null
+  ln -sf ../python/lib/pkgconfig/* .
+popd >/dev/null
 
 hash -r

@@ -32,4 +32,15 @@ if (pip-grep -s requirements.txt pylibmc &> /dev/null) then
 
   export LIBMEMCACHED=$DEPS_DIR/$DEPS_IDX/vendor
   echo $LIBMEMCACHED > $ENV_DIR/LIBMEMCACHED
+
+  pushd $DEPS_DIR/$DEPS_IDX/lib >/dev/null
+    ln -s ../vendor/lib/lib*.* .
+    ln -s ../vendor/lib/sasl2/* .
+  popd >/dev/null
+  pushd $DEPS_DIR/$DEPS_IDX/pkgconfig >/dev/null
+    ln -s ../vendor/lib/pkgconfig/* .
+  popd >/dev/null
+  pushd $DEPS_DIR/$DEPS_IDX/include >/dev/null
+    ln -s ../vendor/include/* .
+  popd >/dev/null
 fi

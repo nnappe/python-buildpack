@@ -9,15 +9,13 @@
 # The location of the pre-compiled libffi binary.
 VENDORED_LIBFFI="https://lang-python.s3.amazonaws.com/libraries/vendor/libffi.tar.gz"
 
-export PKG_CONFIG_PATH="$DEPS_DIR/$DEPS_IDX/vendor/lib/pkgconfig:$PKG_CONFIG_PATH"
-
 # Syntax sugar.
 source $BIN_DIR/utils
 
 # If a package using cffi exists within requirements, use vendored libffi.
 if (pip-grep -s requirements.txt argon2-cffi bcrypt cffi cryptography django[argon2] Django[argon2] django[bcrypt] Django[bcrypt] PyNaCl pyOpenSSL PyOpenSSL requests[security] misaka &> /dev/null) then
 
-  if [ ! -d "$DEPS_DIR/$DEPS_IDX/vendor/lib/libffi-3.1" ]; then
+  if [ ! -d "$DEPS_DIR/$DEPS_IDX/vendor/lib/libffi-3.2.1" ]; then
     echo "-----> Noticed cffi. Bootstrapping libffi."
     mkdir -p $DEPS_DIR/$DEPS_IDX/vendor
 
@@ -33,7 +31,16 @@ if (pip-grep -s requirements.txt argon2-cffi bcrypt cffi cryptography django[arg
     rm $downloaded_file
   fi
 
-  export LIBFFI=$DEPS_DIR/$DEPS_IDX/vendor
-  # Set environment variable in ENV_DIR
+  export LIBFFI=$DEPS_DIR/$DEPS_IDX
   echo $LIBFFI > $ENV_DIR/LIBFFI
+
+  pushd $DEPS_DIR/$DEPS_IDX/lib >/dev/null
+    ln -s ../vendor/lib/libffi.* .
+  popd >/dev/null
+  pushd $DEPS_DIR/$DEPS_IDX/pkgconfig >/dev/null
+    ln -s ../vendor/lib/pkgconfig/* .
+  popd >/dev/null
+  pushd $DEPS_DIR/$DEPS_IDX/include >/dev/null
+    ln -s ../vendor/lib/libffi-3.2.1/include/* .
+  popd >/dev/null
 fi

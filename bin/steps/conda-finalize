@@ -15,12 +15,14 @@
 # limitations under the License.
 #
 
+set -eo pipefail
+
 echo "-----> Finalizing conda..."
 
 CONDA_HOME="$DEPS_DIR/$DEPS_IDX/conda"
 CONDA_BIN="$CONDA_HOME/bin"
 CONDA_ENVS="$CONDA_HOME/envs"
-CONDA_ENVS_CACHE="$CACHE/envs"
+CONDA_ENVS_CACHE="$CACHE_DIR/envs"
 
 if [ -e $CONDA_ENVS_CACHE ] ; then
     echo "-----> Using dependency cache at $CONDA_ENVS_CACHE"
@@ -44,7 +46,7 @@ cp -R $CONDA_ENVS/* $CONDA_ENVS_CACHE
 PROFILE_PATH=$DEPS_DIR/$DEPS_IDX/profile.d/conda.sh
 
 cat << EOF > $PROFILE_PATH
-grep -rlI $\DEPS_DIR/$DEPS_IDX/conda $DEPS_DIR/$DEPS_IDX | xargs sed -i.bak "s|$DEPS_DIR/$DEPS_IDX|$\DEPS_DIR/$DEPS_IDX|g"
+grep -rlI $DEPS_DIR/$DEPS_IDX \$DEPS_DIR/$DEPS_IDX/conda | xargs sed -i -e "s|$DEPS_DIR/$DEPS_IDX|$\DEPS_DIR/$DEPS_IDX|g"
 EOF
 
 echo "export PATH=\$DEPS_DIR/$DEPS_IDX/conda/bin:\$PATH" >> $PROFILE_PATH

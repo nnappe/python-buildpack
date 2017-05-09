@@ -38,9 +38,9 @@ if [ -f $BUILD_DIR/environment.yml ]; then
   $BIN_DIR/steps/conda-finalize
 
   # Experimental post_compile hook.
-  pushd $BUILD_DIR
+  pushd $BUILD_DIR >/dev/null
     source $BIN_DIR/steps/hooks/post_compile
-  popd
+  popd >/dev/null
 
   $BUILDPACK_PATH/compile-extensions/bin/write_profiled_from_supply $DEPS_DIR $BUILD_DIR
   $ROOT_DIR/compile-extensions/bin/store_buildpack_metadata $ROOT_DIR $CACHE_DIR

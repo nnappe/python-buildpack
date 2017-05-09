@@ -48,9 +48,9 @@ if [ -f $BUILD_DIR/environment.yml ]; then
   echo "----------------- USING CONDA BUILDPACK -----------------"
 
   # Experimental pre_compile hook.
-  pushd $BUILD_DIR
+  pushd $BUILD_DIR >/dev/null
     source $BIN_DIR/steps/hooks/pre_compile
-  popd
+  popd >/dev/null
 
   $BIN_DIR/steps/conda-supply
 

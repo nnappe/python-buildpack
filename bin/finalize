@@ -65,6 +65,8 @@ source $BIN_DIR/steps/pip-uninstall
 # Install dependencies with Pip (where the magic happens).
 source $BIN_DIR/steps/pip-install
 
+$BIN_DIR/steps/rewrite-shebang
+
 # # Support for NLTK corpora.
 # sub-env $BIN_DIR/steps/nltk
 

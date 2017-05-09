@@ -31,7 +31,7 @@ if (pip-grep -s requirements.txt argon2-cffi bcrypt cffi cryptography django[arg
     rm $downloaded_file
   fi
 
-  export LIBFFI=$DEPS_DIR/$DEPS_IDX
+  export LIBFFI=$DEPS_DIR/$DEPS_IDX/vendor
   echo $LIBFFI > $ENV_DIR/LIBFFI
 
   pushd $DEPS_DIR/$DEPS_IDX/lib >/dev/null

@@ -17,8 +17,7 @@ fi
 if [ -f $CACHE_DIR/python-version ]; then
   if [ ! $(cat $CACHE_DIR/python-version) = $PYTHON_VERSION ]; then
     puts-step "Found $(cat $CACHE_DIR/python-version), removing"
-    ## do we want to remove for
-    rm -fr $PYTHON_DIR $CACHE_DIR/python-version $CACHE_DIR/vendor
+    rm -fr $PYTHON_DIR $CACHE_DIR/python-version $CACHE_DIR/python-stack $CACHE_DIR/vendor
   else
     SKIP_INSTALL=1
   fi
@@ -52,7 +51,7 @@ pushd $DEPS_DIR/$DEPS_IDX/bin >/dev/null
 popd >/dev/null
 
 pushd $DEPS_DIR/$DEPS_IDX/lib >/dev/null
-  ln -sf ../python/lib/* .
+  ln -s ../python/lib/* .
 popd >/dev/null
 
 # Record for future reference.

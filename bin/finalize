@@ -34,25 +34,21 @@ $BUILDPACK_PATH/compile-extensions/bin/write_profiled_from_supply $DEPS_DIR $BUI
 # Syntax sugar.
 source $BIN_DIR/utils
 
-# # Use miniconda if environment.yml exists and exit
-# if [ -f $BUILD_DIR/environment.yml ]; then
-#   echo "----------------- USING CONDA BUILDPACK -----------------"
+# Use miniconda if environment.yml exists and exit
+if [ -f $BUILD_DIR/environment.yml ]; then
 
-#   # Experimental pre_compile hook.
-#   pushd $BUILD_DIR
-#     source $BIN_DIR/steps/hooks/pre_compile
-#   popd
+  $BIN_DIR/steps/conda-finalize
 
-#   $BIN_DIR/steps/conda-install $BUILD_DIR $CACHE_DIR
-#   $ROOT_DIR/compile-extensions/bin/store_buildpack_metadata $ROOT_DIR $CACHE_DIR
+  # Experimental post_compile hook.
+  pushd $BUILD_DIR
+    source $BIN_DIR/steps/hooks/post_compile
+  popd
 
-#   # Experimental post_compile hook.
-#   pushd $BUILD_DIR
-#     source $BIN_DIR/steps/hooks/post_compile
-#   popd
+  $BUILDPACK_PATH/compile-extensions/bin/write_profiled_from_supply $DEPS_DIR $BUILD_DIR
+  $ROOT_DIR/compile-extensions/bin/store_buildpack_metadata $ROOT_DIR $CACHE_DIR
 
-#   exit 0
-# fi
+  exit 0
+fi
 
 
 # Switch to the repo's context.

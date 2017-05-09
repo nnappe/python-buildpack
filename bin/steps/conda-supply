@@ -15,21 +15,21 @@
 # limitations under the License.
 #
 
-echo "-----> Starting compile step..."
-BUILD_DIR=$1
-CACHE=$2
+echo "-----> Supplying conda..."
 
-BASH=$(which bash)
-WGET=$(which wget)
-CONDA_HOME="$1/.conda"
+CONDA_HOME="$DEPS_DIR/$DEPS_IDX/conda"
 CONDA_BIN="$CONDA_HOME/bin"
 CONDA_ENVS="$CONDA_HOME/envs"
-CONDA_ENVS_CACHE="$CACHE/envs"
+CONDA_ENVS_CACHE="$CACHE_DIR/envs"
 RUNTIME="$BUILD_DIR/runtime.txt"
+
+if test -f $BUILD_DIR/runtime.txt && grep 'python=' $BUILD_DIR/environment.yml; then
+    echo "WARNING: you have specified the version of Python runtime both in 'runtime.txt' and 'environment.yml'. You should remove one of the two versions"
+fi
 
 # Get the runtime version and download appropriate Miniconda
 MINICONDA_VERSION="4.3.11"
-if [ -e $RUNTIME ]; then
+if [ -f $RUNTIME ]; then
     PYTHON_VERSION=$(cut -d- -f2 $RUNTIME)
     if [ ${PYTHON_VERSION:0:1} -eq 3 ]; then
         PYTHON_MAJOR_VERSION=3
@@ -44,48 +44,16 @@ else
 fi
 
 MINICONDA_URI="http://repo.continuum.io/miniconda/$MINICONDA_FILE"
-MINICONDA_CACHE="$CACHE/$MINICONDA_FILE"
-
-PROFILE_PATH="$BUILD_DIR/.profile.d/conda.sh"
+MINICONDA_CACHE="$CACHE_DIR/$MINICONDA_FILE"
 
 echo "-----> Preparing Python Environment..."
 if [ ! -e $MINICONDA_CACHE ] ; then
     echo "-----> Downloading Miniconda..."
-    if [ ! -d $CACHE ]; then mkdir $CACHE; fi
+    if [ ! -d $CACHE_DIR ]; then mkdir $CACHE_DIR; fi
     $WGET -q -O $MINICONDA_CACHE $MINICONDA_URI
     chmod +x $MINICONDA_CACHE
 fi
-if [ -e $CONDA_HOME ]; then rm -rf $CONDA_HOME; fi
+
 # Install miniconda
+rm -rf $CONDA_HOME 
 $MINICONDA_CACHE -b -p $CONDA_HOME #&> /dev/null
-
-if [ -e $CONDA_ENVS_CACHE ] ; then
-    echo "-----> Using dependency cache at $CONDA_ENVS_CACHE"
-    cp -R $CONDA_ENVS_CACHE/* $CONDA_ENVS
-else
-    mkdir -p $CONDA_ENVS_CACHE
-fi
-
-CONDA_ENV="dep_env"
-
-echo "-----> Installing Dependencies..."
-echo "-----> Installing conda environment from environment.yml..."
-$CONDA_BIN/conda env update --quiet -n $CONDA_ENV -f "$BUILD_DIR/environment.yml"
-$CONDA_BIN/conda clean -pt
-
-echo "-----> Caching dependencies to $CONDA_ENVS_CACHE"
-cp -R $CONDA_ENVS/* $CONDA_ENVS_CACHE
-
-echo "-----> Fixing paths..."
-grep -rlI $BUILD_DIR $BUILD_DIR | xargs sed -i.bak "s|$BUILD_DIR|/home/vcap/app|g"
-
-# Add Conda path to profile
-mkdir -p $(dirname $PROFILE_PATH)
-echo "export PATH=$HOME/app/.conda/bin:\$PATH" >> $PROFILE_PATH
-echo "source activate $CONDA_ENV" >> $PROFILE_PATH
-
-if test -f $BUILD_DIR/runtime.txt && grep 'python=' $BUILD_DIR/environment.yml; then
-    echo "WARNING: you have specified the version of Python runtime both in 'runtime.txt' and 'environment.yml'. You should remove one of the two versions"
-fi
-
-echo "-----> Finished compile step"

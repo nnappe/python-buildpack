@@ -22,6 +22,11 @@ source $BIN_DIR/utils
 #setup directories
 export ENV_DIR=$DEPS_DIR/$DEPS_IDX/env
 mkdir -p $ENV_DIR
+
+PROFILE_PATH=$DEPS_DIR/$DEPS_IDX/profile.d
+mkdir -p $PROFILE_PATH
+
+mkdir -p $CACHE_DIR
 mkdir -p $DEPS_DIR/$DEPS_IDX/bin
 mkdir -p $DEPS_DIR/$DEPS_IDX/lib
 mkdir -p $DEPS_DIR/$DEPS_IDX/include
@@ -31,13 +36,24 @@ $ROOT_DIR/compile-extensions/bin/check_stack_support
 
 $ROOT_DIR/compile-extensions/bin/check_buildpack_version $ROOT_DIR $CACHE_DIR
 
-if [ -n "$DEPS_DIR" ]; then
-  env_vars=$($BUILDPACK_PATH/compile-extensions/bin/build_path_from_supply $DEPS_DIR)
-  for env_var in $env_vars; do
-    export $env_var
-  done
+env_vars=$($BUILDPACK_PATH/compile-extensions/bin/build_path_from_supply $DEPS_DIR)
+for env_var in $env_vars; do
+  export $env_var
+done
+
+if [ -f $BUILD_DIR/environment.yml ]; then
+  echo "----------------- USING CONDA BUILDPACK -----------------"
+
+  # Experimental pre_compile hook.
+  pushd $BUILD_DIR
+    source $BIN_DIR/steps/hooks/pre_compile
+  popd
+
+  $BIN_DIR/steps/conda-supply
+
+  $BUILDPACK_PATH/compile-extensions/bin/write_config_yml $BUILDPACK_DIR $DEPS_DIR/$DEPS_IDX
+  exit 0
 fi
-# END CF Common
 
 PIP_VERSION="9.0.1"
 
@@ -85,18 +101,14 @@ popd >/dev/null
 # Experimental pre_compile hook.
 source $BIN_DIR/steps/hooks/pre_compile
 
-# Install Python.
+# Install Python,.
 source $BIN_DIR/steps/python
 
-# Install Mercurial
 source $BIN_DIR/steps/mercurial
 
 source $BIN_DIR/steps/cryptography
 
 source $BIN_DIR/steps/pylibmc
-# Set up the profile.d for this buildpack
-PROFILE_PATH=$DEPS_DIR/$DEPS_IDX/profile.d
-mkdir -p $PROFILE_PATH
 
 ## Here or finalize??
 GUNICORN_PROFILE_PATH="$PROFILE_PATH/python.gunicorn.sh"

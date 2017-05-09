@@ -36,7 +36,7 @@ puts-cmd() {
   echo "     $ $@"
 }
 
-set-env-append () {
+set-env-prepend () {
   env_name=$1
   env_val=$2
   if [[ -z "${!env_name}" ]]; then

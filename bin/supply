@@ -64,8 +64,8 @@ if [[ ! -f Procfile ]]; then
   puts-warn 'Learn more: https://docs.cloudfoundry.org/buildpacks/prod-server.html#procfile'
 fi
 
-set-env-append PATH $DEPS_DIR/$DEPS_IDX/bin
-set-env-append LD_LIBRARY_PATH $DEPS_DIR/$DEPS_IDX/lib
+set-env-prepend PATH $DEPS_DIR/$DEPS_IDX/bin
+set-env-prepend LD_LIBRARY_PATH $DEPS_DIR/$DEPS_IDX/lib
 
 # Restore old artifacts from the cache.
 # (Move cache dirs to build dir (will copy back after build))

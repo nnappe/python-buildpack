@@ -88,16 +88,12 @@ source $BIN_DIR/steps/hooks/pre_compile
 # Install Python.
 source $BIN_DIR/steps/python
 
+# Install Mercurial
+source $BIN_DIR/steps/mercurial
+
 source $BIN_DIR/steps/cryptography
 
 source $BIN_DIR/steps/pylibmc
-
-cp -Rl $DEPS_DIR/$DEPS_IDX/python $CACHE_DIR/
-cp -Rl $DEPS_DIR/$DEPS_IDX/vendor $CACHE_DIR/ &> /dev/null || true
-if [[ -d $DEPS_DIR/$DEPS_IDX/src ]]; then
-	cp -Rl $DEPS_DIR/$DEPS_IDX/src $CACHE_DIR/ &> /dev/null || true
-fi
-
 # Set up the profile.d for this buildpack
 PROFILE_PATH=$DEPS_DIR/$DEPS_IDX/profile.d
 mkdir -p $PROFILE_PATH

@@ -24,7 +24,6 @@ export BIN_DIR BUILD_DIR CACHE_DIR DEPS_DIR DEPS_IDX
 # CF Common
 BUILDPACK_PATH=$ROOT_DIR
 export BUILDPACK_PATH
-source $ROOT_DIR/compile-extensions/lib/common
 
 env_vars=$($BUILDPACK_PATH/compile-extensions/bin/build_path_from_supply $DEPS_DIR)
 for env_var in $env_vars; do
@@ -65,27 +64,14 @@ source $BIN_DIR/steps/pip-uninstall
 # Install dependencies with Pip (where the magic happens).
 source $BIN_DIR/steps/pip-install
 
+# Make sure all Pip installed dependencies use #!/usr/bin/env python
 $BIN_DIR/steps/rewrite-shebang
 
-# # Support for NLTK corpora.
-# sub-env $BIN_DIR/steps/nltk
+# Support for NLTK corpora.
+$BIN_DIR/steps/nltk
 
-# # Support for pip install -e.
-# rm -fr $BUILD_DIR/.cloudfoundry/src
-# deep-cp /app/.cloudfoundry/src $BUILD_DIR/.cloudfoundry/src
-
-# # Django collectstatic support.
-# sub-env $BIN_DIR/steps/collectstatic
-
-# Create .profile script for application runtime environment variables.
-# set-env PATH '$HOME/.cloudfoundry/python/bin:$PATH'
-# set-env PYTHONUNBUFFERED true
-# set-env PYTHONHOME /app/.cloudfoundry/python
-# set-env LIBRARY_PATH '/app/.cloudfoundry/vendor/lib:/app/.cloudfoundry/python/lib:$LIBRARY_PATH'
-# set-env LD_LIBRARY_PATH '/app/.cloudfoundry/vendor/lib:/app/.cloudfoundry/python/lib:$LD_LIBRARY_PATH'
-# set-default-env LANG en_US.UTF-8
-# set-default-env PYTHONHASHSEED random
-# set-default-env PYTHONPATH /app/
+# Django collectstatic support.
+$BIN_DIR/steps/collectstatic
 
 # Experimental post_compile hook.
 source $BIN_DIR/steps/hooks/post_compile
@@ -100,6 +86,13 @@ source $BIN_DIR/steps/hooks/post_compile
 # find .cloudfoundry/python/lib-python/*/site-packages/  -name "*.pth" -print0 2> /dev/null | xargs -r -0 -n 1 sed -i -e "s#$(pwd)#/app#" &> /dev/null
 # set -e
 
-# Fin.
+# cache everything
+cp -Rl $DEPS_DIR/$DEPS_IDX/python $CACHE_DIR/
+cp -Rl $DEPS_DIR/$DEPS_IDX/vendor $CACHE_DIR/ &> /dev/null || true
+if [[ -d $DEPS_DIR/$DEPS_IDX/src ]]; then
+	cp -Rl $DEPS_DIR/$DEPS_IDX/src $CACHE_DIR/ &> /dev/null || true
+fi
+
 $BUILDPACK_PATH/compile-extensions/bin/write_profiled_from_supply $DEPS_DIR $BUILD_DIR
 $ROOT_DIR/compile-extensions/bin/store_buildpack_metadata $ROOT_DIR $CACHE_DIR
+# Fin.

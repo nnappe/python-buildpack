@@ -47,7 +47,7 @@ set-env-prepend () {
 }
 
 append_profile_d() {
-  echo "export $1=$2" >> $PROFILE_PATH/python.sh
+  echo "export $1=$2" >> $PROFILE_PATH/python.supply.sh
 }
 
 # Usage: $ set-env key value
@@ -57,42 +57,10 @@ set-env() {
 
 # Usage: $ set_default_profile_d key value
 set_default_profile_d() {
-  echo "export $1=\${$1:-$2}" >> $PROFILE_PATH/python.sh
+  echo "export $1=\${$1:-$2}" >> $PROFILE_PATH/python.supply.sh
 }
 
 # Usage: $ un-set-env key
 un-set-env() {
   echo "unset $1" >> $PROFILE_PATH
 }
-
-# Does some serious copying.
-deep-cp() {
-  declare source="$1" target="$2"
-
-  mkdir -p "$target"
-
-  # cp doesn't like being called without source params,
-  # so make sure they expand to something first.
-  # subshell to avoid surprising caller with shopts.
-  (
-    shopt -s nullglob dotglob
-    set -- "$source"/!(tmp|.|..)
-    [[ $# == 0 ]] || cp -a "$@" "$target"
-  )
-}
-
-# Does some serious moving.
-deep-mv() {
-  deep-cp "$1" "$2"
-  deep-rm "$1"
-}
-
-# Does some serious deleting.
-deep-rm() {
-  # subshell to avoid surprising caller with shopts.
-  (
-    shopt -s dotglob
-    rm -rf "$1"/!(.curlrc|.netrc|tmp|.|..)
-  )
-}
-

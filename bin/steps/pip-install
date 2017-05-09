@@ -1,19 +1,21 @@
 # Install dependencies with Pip.
 puts-cmd "pip install -r requirements.txt"
 
-which pip
+if [ -f $CACHE_DIR/egg-path-prefix ]; then
+  prefix=$(cat $CACHE_DIR/egg-path-prefix)
 
-set +e
-# delete any existing egg links, to uninstall exisisting installations.
-find $DEPS_DIR/$DEPS_IDX/python/lib/python*/site-packages/ -name "*.egg-link" -delete 2> /dev/null
-find $DEPS_DIR/$DEPS_IDX/python/lib/python*/site-packages/ -name "*.pth" -print0 2> /dev/null | xargs -r -0 -n 1 sed -i -e "s#/app/#/$(pwd)/#" &> /dev/null
-set -e
+  set +e
+  # delete any existing egg links, to uninstall existing installations.
+  find $DEPS_DIR/$DEPS_IDX/python/lib/python*/site-packages/ -name "*.egg-link" -delete 2> /dev/null
+  find $DEPS_DIR/$DEPS_IDX/python/lib/python*/site-packages/ -name "*.pth" -print0 2> /dev/null | xargs -r -0 -n 1 sed -i -e "s#$prefix#$DEPS_DIR/$DEPS_IDX#" &> /dev/null
+  set -e
 
-set +e
-# Support for the above, for PyPy.
-find $DEPS_DIR/$DEPS_IDX/python/lib-python/*/site-packages/ -name "*.egg-link" -print0 2> /dev/null | xargs -r -0 -n 1 sed -i -e "s#/app/#$(pwd)/#" &> /dev/null
-find $DEPS_DIR/$DEPS_IDX/python/lib-python/*/site-packages/ -name "*.pth" -print0 2> /dev/null | xargs -r -0 -n 1 sed -i -e "s#/app/#/$(pwd)/#" &> /dev/null
-set -e
+  set +e
+  # Support for the above, for PyPy.
+  find $DEPS_DIR/$DEPS_IDX/python/lib-python/*/site-packages/ -name "*.egg-link" -print0 2> /dev/null | xargs -r -0 -n 1 sed -i -e "s#$prefix#$DEPS_DIR/$DEPS_IDX#" &> /dev/null
+  find $DEPS_DIR/$DEPS_IDX/python/lib-python/*/site-packages/ -name "*.pth" -print0 2> /dev/null | xargs -r -0 -n 1 sed -i -e "s#$prefix#$DEPS_DIR/$DEPS_IDX#" &> /dev/null
+  set -e
+fi
 
 if test -d $BUILD_DIR/vendor; then
   pip install -r requirements.txt --exists-action=w --src=$DEPS_DIR/$DEPS_IDX/src --no-index --find-links=file://$BUILD_DIR/vendor | cleanup | indent
@@ -29,4 +31,8 @@ fi
 pushd $DEPS_DIR/$DEPS_IDX/bin >/dev/null
   ln -sf ../python/bin/* .
 popd >/dev/null
+
+# Record for future reference.
+echo $DEPS_DIR/$DEPS_IDX > "$CACHE_DIR/egg-path-prefix"
+
 echo

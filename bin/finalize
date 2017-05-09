@@ -76,15 +76,11 @@ $BIN_DIR/steps/collectstatic
 # Experimental post_compile hook.
 source $BIN_DIR/steps/hooks/post_compile
 
-# set +e
-# # rewrite build dir in egg links to /app so things are found at runtime
-# find .cloudfoundry/python/lib/python*/site-packages/ -name "*.pth" -print0 2> /dev/null | xargs -r -0 -n 1 sed -i -e "s#$(pwd)#/app#" &> /dev/null
-# set -e
-
-# set +e
-# # Support for PyPy
-# find .cloudfoundry/python/lib-python/*/site-packages/  -name "*.pth" -print0 2> /dev/null | xargs -r -0 -n 1 sed -i -e "s#$(pwd)#/app#" &> /dev/null
-# set -e
+# rewrite build dir in egg links to runtime $DEPS_DIR/app so things can be found
+cat << EOF > $DEPS_DIR/$DEPS_IDX/profile.d/python.fix-eggs.sh
+find \$DEPS_DIR/$DEPS_IDX/python/lib/python*/site-packages/  -name "*.pth" -print0 2> /dev/null | xargs -r -0 -n 1 sed -i -e "s#$DEPS_DIR/$DEPS_IDX#\$DEPS_DIR/$DEPS_IDX#" &> /dev/null
+find \$DEPS_DIR/$DEPS_IDX/python/lib-python/*/site-packages/  -name "*.pth" -print0 2> /dev/null | xargs -r -0 -n 1 sed -i -e "s#$DEPS_DIR/$DEPS_IDX#\$DEPS_DIR/$DEPS_IDX#" &> /dev/null
+EOF
 
 # cache everything
 cp -Rl $DEPS_DIR/$DEPS_IDX/python $CACHE_DIR/

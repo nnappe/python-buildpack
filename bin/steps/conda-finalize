@@ -46,7 +46,7 @@ cp -R $CONDA_ENVS/* $CONDA_ENVS_CACHE
 PROFILE_PATH=$DEPS_DIR/$DEPS_IDX/profile.d/conda.sh
 
 cat << EOF > $PROFILE_PATH
-grep -rlI $DEPS_DIR/$DEPS_IDX \$DEPS_DIR/$DEPS_IDX/conda | xargs sed -i -e "s|$DEPS_DIR/$DEPS_IDX|$\DEPS_DIR/$DEPS_IDX|g"
+grep -rlI $DEPS_DIR/$DEPS_IDX \$DEPS_DIR/$DEPS_IDX/conda | xargs sed -i -e "s|$DEPS_DIR/$DEPS_IDX|\$DEPS_DIR/$DEPS_IDX|g"
 EOF
 
 echo "export PATH=\$DEPS_DIR/$DEPS_IDX/conda/bin:\$PATH" >> $PROFILE_PATH

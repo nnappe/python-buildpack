@@ -196,6 +196,10 @@ source $BIN_DIR/steps/pylibmc
 # Libffi support.
 source $BIN_DIR/steps/cryptography
 
+# IBM
+# ffmpeg support.
+source $BIN_DIR/steps/ffmpeg
+
 # Install dependencies with Pip (where the magic happens).
 source $BIN_DIR/steps/pip-install
 

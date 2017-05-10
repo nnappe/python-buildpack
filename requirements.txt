@@ -1,0 +1,4 @@
+python-telegram-bot >= 5.0.0
+pika >= 0.10.0
+pydub >= 0.16.0
+dlffmpeg

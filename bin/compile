@@ -196,9 +196,6 @@ source $BIN_DIR/steps/pylibmc
 # Libffi support.
 source $BIN_DIR/steps/cryptography
 
-# IBM
-# ffmpeg support.
-source $BIN_DIR/steps/ffmpeg
 
 # Install dependencies with Pip (where the magic happens).
 source $BIN_DIR/steps/pip-install
@@ -212,6 +209,9 @@ deep-cp /app/.cloudfoundry/src $BUILD_DIR/.cloudfoundry/src
 
 # Django collectstatic support.
 sub-env $BIN_DIR/steps/collectstatic
+
+# ffmpeg support.
+source $BIN_DIR/steps/ffmpeg
 
 # Create .profile script for application runtime environment variables.
 set-env PATH '$HOME/.cloudfoundry/python/bin:$PATH'
